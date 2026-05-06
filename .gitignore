@@ -1,0 +1,7 @@
+.venv/
+.vscode/
+__pycache__/
+
+output/
+sam3.pt
+*.pt
