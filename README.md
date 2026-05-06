@@ -3,6 +3,8 @@
 A frame-by-frame video annotation tool that produces YOLO-format datasets.
 It combines manual bounding-box editing with SAM3-powered semi-automatic tracking.
 
+> **Model weights required** — this project requires the SAM3 model weights file (`sam3.pt`) which is not included in the repository. Download it from [this link](#) and place it in the root of the repository before running `main.py`.
+
 ---
 
 ## Usage
