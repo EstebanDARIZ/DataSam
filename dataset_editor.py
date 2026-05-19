@@ -81,6 +81,7 @@ class DatasetEditor:
         self._pan_start      = None   # (mx, my) en data coords au début du pan
         self._pan_xlim0      = None
         self._pan_ylim0      = None
+        self._undo_stack     = []     # historique labels par frame (max 20)
 
         # État SAM
         self._sam_thread         = None
@@ -243,8 +244,9 @@ class DatasetEditor:
         frame_name = f"frame_{self.idx:06d}"
         self.current_img_path   = os.path.join(self.imgs_dir,   frame_name + ".jpg")
         self.current_label_path = os.path.join(self.labels_dir, frame_name + ".txt")
-        self.labels   = read_labels(self.current_label_path)
-        self.sel_bbox = None
+        self.labels      = read_labels(self.current_label_path)
+        self.sel_bbox    = None
+        self._undo_stack = []
 
         img_bgr = self._read_video_frame(self.idx)
         if img_bgr is None:
@@ -797,6 +799,8 @@ class DatasetEditor:
     def _on_key(self, ev):
         k = ev.key
         if   k in ("control", "ctrl"): self._ctrl_pressed = True
+        elif k == "ctrl+z" and not self.playing and not self._sam_running:
+            self._undo()
         elif k == " ":        self._toggle_play()
         elif k == "left":     self._go(-1)
         elif k == "right":    self._go(1)
@@ -834,6 +838,8 @@ class DatasetEditor:
             self.new_box_start = None
             self._set_cursor()
             self._update_display()
+        elif k in ("y", "Y") and not self.playing:
+            self._paste_previous_labels()
         elif k == "r" and not self.playing:
             self._hide_boxes = True
             self._update_display()
@@ -923,6 +929,7 @@ class DatasetEditor:
                                                self.W, self.H)
                 if x1 <= mx <= x2 and y1 <= my <= y2:
                     if self.sel_bbox == i:
+                        self._push_undo()
                         del self.labels[i]
                         self._save_current_annotation()
                         print(f"  [-] Bbox cls{int(lb[0])} deleted")
@@ -942,6 +949,7 @@ class DatasetEditor:
                 x1, y1, x2, y2 = yolo_to_xyxy(lb[1], lb[2], lb[3], lb[4],
                                                self.W, self.H)
                 if x1 <= mx <= x2 and y1 <= my <= y2:
+                    self._push_undo()
                     del self.labels[i]
                     self._save_current_annotation()
                     print(f"  [-] Bbox cls{int(lb[0])} deleted (erase mode)")
@@ -985,6 +993,7 @@ class DatasetEditor:
             self.drag_handle = handle
             self.drag_start  = (mx, my)
             self.drag_orig   = (x1, y1, x2, y2)
+            self._push_undo()
             self._start_drag_blit(x1, y1, x2, y2)
             return
 
@@ -994,6 +1003,7 @@ class DatasetEditor:
             self.drag_handle = "inside"
             self.drag_start  = (mx, my)
             self.drag_orig   = (x1, y1, x2, y2)
+            self._push_undo()
             self._start_drag_blit(x1, y1, x2, y2)
             return
 
@@ -1114,6 +1124,7 @@ class DatasetEditor:
 
         cls_id = self._draw_class if self._draw_class is not None else ask_class_id(default=0)
         if cls_id is not None:
+            self._push_undo()
             xc, yc, bw, bh = xyxy_to_yolo(x1, y1, x2, y2, self.W, self.H)
             self.labels.append([cls_id, xc, yc, bw, bh])
             self.sel_bbox    = len(self.labels) - 1  # sélectionner immédiatement
@@ -1127,6 +1138,37 @@ class DatasetEditor:
         self._update_display()
 
     
+    def _push_undo(self):
+        self._undo_stack.append([list(lb) for lb in self.labels])
+        if len(self._undo_stack) > 20:
+            self._undo_stack.pop(0)
+
+    def _undo(self):
+        if not self._undo_stack:
+            print("  [undo] Nothing to undo.")
+            return
+        self.labels = self._undo_stack.pop()
+        self.sel_bbox = None
+        self._save_current_annotation()
+        print(f"  [undo] Restored {len(self.labels)} bbox(s)")
+        self._update_display()
+
+    def _paste_previous_labels(self):
+        """Colle les boxes de la dernière frame annotée avant la frame courante."""
+        for prev_idx in range(self.idx - 1, -1, -1):
+            prev_label_path = os.path.join(self.labels_dir, f"frame_{prev_idx:06d}.txt")
+            if os.path.exists(prev_label_path):
+                prev_labels = read_labels(prev_label_path)
+                if prev_labels:
+                    self._push_undo()
+                    self.labels = [list(lb) for lb in prev_labels]
+                    self.sel_bbox = None
+                    self._save_current_annotation()
+                    print(f"  [y] {len(self.labels)} bbox(s) copiées depuis frame {prev_idx}")
+                    self._update_display()
+                    return
+        print("  [y] Aucune frame annotée trouvée avant la frame courante.")
+
     def _delete_current_frame(self):
         del_dir = os.path.join(self.folder, "_deleted")
         os.makedirs(del_dir, exist_ok=True)

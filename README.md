@@ -119,6 +119,26 @@ A status bar at the top of the canvas shows the current frame index, annotation 
 
 Press `Delete` or the **Delete** button to move the current frame's image and label files to `_deleted/` (timestamped to avoid collisions). The frame itself remains navigable in the video — only the saved annotation files are removed.
 
+### Undo (`Ctrl+Z`)
+
+Press `Ctrl+Z` to undo the last manual annotation action on the current frame. Up to 20 undo steps are available per frame.
+
+The following actions can be undone:
+- Drawing a new bounding box
+- Deleting a box (right-click or Erase mode)
+- Moving or resizing a box
+- Pasting boxes with `Y`
+
+The undo history is **reset when navigating to a different frame** — it only covers edits made during the current visit to a frame. SAM3 tracking results cannot be undone.
+
+### Pasting boxes from the previous annotated frame
+
+Press `Y` to copy all bounding boxes from the **last annotated frame before the current one** onto the current frame.
+
+The editor scans backwards from the current position and uses the first frame that has at least one saved label. The copied boxes replace any existing annotation on the current frame, which is then saved immediately.
+
+This is useful when objects have barely moved between two frames: instead of redrawing all boxes from scratch, press `Y` to get a ready-made starting point and adjust only what changed.
+
 ### Zoom and pan
 
 | Action | Effect |
@@ -293,7 +313,9 @@ _PALETTE_PIL = [
 | `N` | Toggle Draw mode (prompts for class ID on release) |
 | `0`–`9` | Enter Draw mode pre-selecting that class ID |
 | `K` | Toggle Erase mode |
+| `Ctrl+Z` | Undo last annotation action (not available during SAM3) |
 | `R` (hold) | Hide bounding boxes temporarily |
+| `Y` | Paste boxes from the last annotated frame before the current one |
 | `Delete` | Move current frame annotation to `_deleted/` |
 | `S` | Launch SAM3 tracking |
 | `X` | Stop SAM3 tracking |
