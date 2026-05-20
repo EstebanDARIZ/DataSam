@@ -1153,6 +1153,14 @@ class DatasetEditor:
         print(f"  [undo] Restored {len(self.labels)} bbox(s)")
         self._update_display()
 
+    def _in_zoom_view(self, lb):
+        """Retourne True si le centre de lb est dans la vue zoom courante."""
+        cx_px = lb[1] * self.W
+        cy_px = lb[2] * self.H
+        x0, x1 = self._zoom_xlim
+        y0, y1 = self._zoom_ylim  # y0 > y1 (axe inversé : y0=bas, y1=haut)
+        return x0 <= cx_px <= x1 and y1 <= cy_px <= y0
+
     def _paste_previous_labels(self):
         """Colle les boxes de la dernière frame annotée avant la frame courante."""
         for prev_idx in range(self.idx - 1, -1, -1):
@@ -1160,11 +1168,26 @@ class DatasetEditor:
             if os.path.exists(prev_label_path):
                 prev_labels = read_labels(prev_label_path)
                 if prev_labels:
+                    if self._zoom_xlim is not None:
+                        prev_in_view = [list(lb) for lb in prev_labels
+                                        if self._in_zoom_view(lb)]
+                        if not prev_in_view:
+                            print(f"  [y] Aucune box dans la vue depuis frame {prev_idx}.")
+                            return
+                        keep_current = [list(lb) for lb in self.labels
+                                        if not self._in_zoom_view(lb)]
+                        labels_to_set = keep_current + prev_in_view
+                        msg = (f"  [y] {len(prev_in_view)} box(es) collée(s) depuis "
+                               f"frame {prev_idx} (vue zoom)")
+                    else:
+                        labels_to_set = [list(lb) for lb in prev_labels]
+                        msg = f"  [y] {len(labels_to_set)} bbox(s) copiées depuis frame {prev_idx}"
+
                     self._push_undo()
-                    self.labels = [list(lb) for lb in prev_labels]
+                    self.labels = labels_to_set
                     self.sel_bbox = None
                     self._save_current_annotation()
-                    print(f"  [y] {len(self.labels)} bbox(s) copiées depuis frame {prev_idx}")
+                    print(msg)
                     self._update_display()
                     return
         print("  [y] Aucune frame annotée trouvée avant la frame courante.")

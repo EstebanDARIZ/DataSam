@@ -7,6 +7,25 @@ It combines manual bounding-box editing with SAM3-powered semi-automatic trackin
 
 ---
 
+## Installation on Windows
+
+### Prerequisites
+
+- **Python 3.12** — download from [python.org](https://www.python.org/downloads/). During installation, check **"Add Python to PATH"**.
+- **NVIDIA drivers** up to date (no need to install the CUDA Toolkit separately).
+- The `sam3.pt` weights file placed at the root of the repository.
+
+### Steps
+
+1. Download or clone this repository.
+2. Place `sam3.pt` at the root of the folder.
+3. Double-click **`setup_windows.bat`** — this creates a virtual environment and installs all dependencies. Run it only once.
+4. Double-click **`run_windows.bat`** — this starts the tool. It will ask for the path to your video and your output folder.
+
+> **Tip:** you can drag and drop a file or folder directly into the terminal window to fill in a path automatically.
+
+---
+
 ## Usage
 
 ```bash
