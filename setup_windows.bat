@@ -39,7 +39,7 @@ if errorlevel 1 (
     echo        SAM3 performance will be limited.
 ) else (
     echo [OK] NVIDIA GPU detected. Installing PyTorch with CUDA 12.x.
-    set CUDA_URL=https://download.pytorch.org/whl/cu128
+    set CUDA_URL=https://download.pytorch.org/whl/cu124
 )
 
 REM --- Install PyTorch ---
