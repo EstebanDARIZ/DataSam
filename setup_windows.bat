@@ -45,7 +45,7 @@ if errorlevel 1 (
 REM --- Install PyTorch ---
 echo.
 echo Installing PyTorch from !CUDA_URL!...
-pip install torch==2.10.0 --index-url !CUDA_URL!
+pip install torch --index-url !CUDA_URL!
 if errorlevel 1 (
     echo [ERROR] PyTorch installation failed.
     echo Check your internet connection and try again.

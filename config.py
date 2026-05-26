@@ -43,7 +43,6 @@ CLASS_NAMES: dict = {
     4: "Pilot Fish",
     5: "Shark",
     6: "JellyFish",
-    7: "Fish",
+    7: "Tuna",
     8: "Mackerel",
-    9: "Tuna",
 }
